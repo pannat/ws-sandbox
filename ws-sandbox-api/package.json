@@ -1,0 +1,23 @@
+{
+  "name": "ws-sandbox-api",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "nodemon --watch \"src/**\" --ext \"ts,json\" --ignore \"src/**/*.spec.ts\" --exec node --loader ts-node/esm ./src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@fastify/cors": "8.5.0",
+    "@fastify/websocket": "8.3.1",
+    "@types/node": "^18.4.0",
+    "fastify": "4.26.0",
+    "nodemon": "3.0.3",
+    "ts-node": "10.9.2",
+    "typescript": "^4.8.4"
+  }
+}

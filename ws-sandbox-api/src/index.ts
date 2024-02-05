@@ -230,7 +230,6 @@ const json = [
   }
 ]
 
-
 const server: FastifyInstance = fastify({ logger: true });
 
 server.register(cors, { origin: "*" });

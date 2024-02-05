@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {RouterOutlet} from '@angular/router';
-import {SocketService} from "./ws/socket.service";
+import {SocketService, SubscriptionEvent} from "./ws/socket.service";
 import {SocketStatsStore} from "./ws/socket-stats.store";
 
 @Component({
@@ -19,7 +19,9 @@ export class AppComponent implements OnInit {
   ngOnInit() {
     // Инициализация подключения вебсокета
     this.socketService.init(`ws://localhost:8080/statuses?guid=test-guid&source=ARM_LPU`);
+  }
 
+  send() {
     // Отправляем сообщение серверу
     this.socketService.watchQueue([{ id: 'dgfgjhk', code: 'blabla'}]);
   }

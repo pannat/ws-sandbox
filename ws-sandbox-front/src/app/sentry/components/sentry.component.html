@@ -1,0 +1,6 @@
+
+<h2>Sentry Interceptor</h2>
+<section>
+    <button (click)="fetchSomething()">Send HTTP Request</button>
+    <p *ngIf="data.asObservable() | async as hello">{{hello | json}}</p>
+</section>

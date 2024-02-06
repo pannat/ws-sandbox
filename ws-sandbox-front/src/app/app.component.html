@@ -1,3 +1,22 @@
-<button (click)="send()">Send</button>
+<h1>Sandbox Navigation</h1>
+<ul>
+    <li>
+        <a routerLink="ws">WebSocket</a>
+    </li>
+    <li>
+        <p>
+            <a routerLink="sentry">Sentry Interceptor</a>
+        </p>
+        <p>
+            <a routerLink="page-sentry-2">Sentry Interceptor Page 2</a>
+        </p>
+        <p>
+            <a routerLink="page-sentry-3">Sentry Interceptor Page 3</a>
+        </p>
 
-{{ message$ | async | json }}
+    </li>
+</ul>
+
+<main>
+    <router-outlet></router-outlet>
+</main>

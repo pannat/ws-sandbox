@@ -1,6 +1,21 @@
 import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
+import * as Sentry from "@sentry/node";
+import {continueTrace} from "@sentry/core";
 import websocket, { SocketStream } from '@fastify/websocket';
+import {ProfilingIntegration} from "@sentry/profiling-node";
+
+Sentry.init({
+  dsn: "https://b88e6d0eda9fcb25bf847814fd601920@us.sentry.io/4506699218681856",
+  integrations: [
+    new Sentry.Integrations.Http({ tracing: true }),
+    new ProfilingIntegration(),
+  ],
+  // Performance Monitoring
+  tracesSampleRate: 1.0, //  Capture 100% of the transactions
+  // Set sampling rate for profiling - this is relative to tracesSampleRate
+  profilesSampleRate: 1.0,
+});
 
 const json = [
   {
@@ -239,13 +254,34 @@ server.register(async function (fastify) {
   fastify.get('/statuses', { websocket: true }, (connection: SocketStream, req: FastifyRequest) => {
     // Смотрим что фронт отправил нам в queryParams
     console.log(JSON.stringify(req.query));
+
+    fastify.websocketServer.clients.forEach((c: any) => c.send(JSON.stringify({ eventType: 'message', data: json })));
+
     connection.socket.on('message', (message: Buffer) => {
       // Смотрим входящее сообщение от клиента
-      console.log(message.toString());
       // Отвечает клиенту всегда при получении сообщения
       return connection.socket.send(JSON.stringify({ eventType: 'message', data: json }));
     })
   })
+
+  // @ts-ignore
+  fastify.get('/api/start', async function (request, reply) {
+    let traceParent;
+    const sentryTrace = request.headers['sentry-trace'];
+    const baggage = request.headers['baggage'];
+    if (sentryTrace && baggage) {
+      traceParent = continueTrace({sentryTrace, baggage});
+    }
+
+    const transaction = Sentry.startTransaction({
+      op: "Handle incoming request",
+      name: request.originalUrl,
+      ...traceParent
+    });
+
+
+    reply.status(400).send({ message: 'Test Error' }).then(() => transaction.finish(Date.now()))
+  });
 });
 
 // Run the server!

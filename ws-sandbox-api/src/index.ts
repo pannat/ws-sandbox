@@ -252,15 +252,18 @@ server.register(websocket);
 
 server.register(async function (fastify) {
   fastify.get('/statuses', { websocket: true }, (connection: SocketStream, req: FastifyRequest) => {
-    // Смотрим что фронт отправил нам в queryParams
-    console.log(JSON.stringify(req.query));
-
-    fastify.websocketServer.clients.forEach((c: any) => c.send(JSON.stringify({ eventType: 'message', data: json })));
-
     connection.socket.on('message', (message: Buffer) => {
-      // Смотрим входящее сообщение от клиента
-      // Отвечает клиенту всегда при получении сообщения
-      return connection.socket.send(JSON.stringify({ eventType: 'message', data: json }));
+      const incomingMessageBody = JSON.parse(message.toString()) as { data?: { type?: 'choose_state' | 'next_state' } };
+      if (incomingMessageBody?.data?.type === 'choose_state') {
+        // Отправляем статусы
+        return connection.socket.send(JSON.stringify({ eventType: 'message', data: json }));
+      }
+
+      if (incomingMessageBody?.data?.type === 'next_state') {
+        // Случайным образом отправляем ошибку или статусы
+        const outgoingMessageBody = Math.random() < 0.5 ? { eventType: 'error', data: { type: 'next_state', reason: 'Переход по статусу невозможен' } } : { eventType: 'message', data: json };
+        return connection.socket.send(JSON.stringify(outgoingMessageBody));
+      }
     })
   })
 

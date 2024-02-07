@@ -17,11 +17,24 @@ export class WsComponent implements OnInit {
 
   ngOnInit() {
     // Инициализация подключения вебсокета
-    this.socketService.init(`ws://localhost:8080/statuses?guid=test-guid&source=ARM_LPU`);
+    this.socketService.init(`ws://localhost:8080/statuses`);
+    const subscribeOnTopic = {
+      type: 'choose_state',
+      data: {
+        object_id: 'guid'
+      }
+    }
+    this.socketService.watchQueue([subscribeOnTopic]);
   }
 
   send() {
+    const changeStatus = {
+      type: 'next_state',
+      data: {
+        object_id: 'guid'
+      }
+    }
     // Отправляем сообщение серверу
-    this.socketService.watchQueue([{ id: 'dgfgjhk', code: 'blabla'}]);
+    this.socketService.watchQueue([changeStatus]);
   }
 }

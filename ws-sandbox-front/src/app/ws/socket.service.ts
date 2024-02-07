@@ -45,7 +45,26 @@ export interface Message {
   sentAt: Date;
 }
 
-export type EventType = 'message' | 'connect' | 'disconnect';
+export interface Message2<T> {
+  traceId: string;
+  spanId: string;
+  type: 'choose_state' | 'next_state';
+  source: 'ARM_LPU' | string;
+  data: {
+    "object_id": "f77948dc-7bc8-42cb-979e"; // guid
+    "payload": T;
+  },
+}
+
+/*"payload": {// 'next_state'
+  "datacontetnttype": "application/json",
+      "state": {
+    "code": "12"
+  }
+}
+},*/
+
+export type EventType = 'error' | 'message' | 'connect' | 'disconnect';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface WsMessageContent {}

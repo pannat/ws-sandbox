@@ -2,7 +2,8 @@ import {Component, inject} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {HttpClient} from "@angular/common/http";
 import {startSpanManual} from "@sentry/core";
-import {ReplaySubject} from "rxjs";
+import {catchError, EMPTY, finalize, ReplaySubject} from "rxjs";
+import {getCurrentScope} from "@sentry/angular-ivy";
 
 @Component({
   selector: 'app-sentry',
@@ -17,6 +18,18 @@ export class SentryComponent {
   httpClient = inject(HttpClient);
 
   fetchSomething() {
-    this.httpClient.get('/api/start?param1=test&param2=test2').subscribe((res) => this.data.next(res))
+      startSpanManual(
+          {
+            op: 'ui.angular.fetchSomething',
+            name: 'search policies',
+            scope: getCurrentScope(),
+          },
+          (span) =>
+              this.httpClient.get('/api/start?param1=test&param2=test2').pipe(
+                  finalize(() => {
+                    span?.end(Date.now());
+                  }),
+              ),
+      ).pipe(catchError(() => EMPTY)).subscribe((res) => this.data.next(res))
   }
 }

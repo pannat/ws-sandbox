@@ -1,8 +1,8 @@
 import {HttpEvent, HttpHandlerFn, HttpHeaders, HttpRequest} from "@angular/common/http";
-import {Observable} from "rxjs";
-import {dynamicSamplingContextToSentryBaggageHeader} from '@sentry/utils';
-import {getActiveSpan, spanToTraceContext, spanToTraceHeader, startSpanManual} from '@sentry/core';
-import {startSpan} from "@sentry/angular-ivy";
+import {finalize, Observable} from "rxjs";
+import {dynamicSamplingContextToSentryBaggageHeader, stripUrlQueryAndFragment} from '@sentry/utils';
+import {getActiveSpan, getDynamicSamplingContextFromSpan, spanToTraceHeader, startSpanManual} from '@sentry/core';
+import {getCurrentScope, startSpan} from "@sentry/angular-ivy";
 
 export interface SentryTraceHeader {
     baggage?: string;
@@ -15,7 +15,7 @@ export const getSentryTraceHeaders = (): SentryTraceHeader | undefined => {
     const span = getActiveSpan();
     if (span) {
         headers = { ['sentry-trace']: spanToTraceHeader(span) };
-        const dynamicSamplingContext = spanToTraceContext(span);
+        const dynamicSamplingContext = getDynamicSamplingContextFromSpan(span);
         const sentryBaggageHeader = dynamicSamplingContextToSentryBaggageHeader(dynamicSamplingContext);
         if (sentryBaggageHeader) {
             headers['baggage'] = sentryBaggageHeader;
@@ -37,21 +37,22 @@ const mergeHttpHeadersWithSentryTrace = (httpHeaders: HttpHeaders) => {
     return httpHeaders;
 };
 
-const mapRequest = (request: HttpRequest<unknown>): HttpRequest<unknown> => {
+const intercept = (request: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
     const updatedRequest = () => request.clone({ headers: mergeHttpHeadersWithSentryTrace(request.headers) });
-    const activeSpan = getActiveSpan();
-    if (activeSpan) {
-        return updatedRequest();
+
+    if (getActiveSpan()) {
+        return next(updatedRequest());
     }
 
-    return startSpan({
-        op: 'HTTP Request',
-        name: request.url,
-    }, updatedRequest);
-}
-
+    return startSpanManual(
+        {
+            op: 'http.client',
+            name: `${request.method} ${stripUrlQueryAndFragment(request.url)}`,
+            scope: getCurrentScope(),
+        },
+        (span) => next(updatedRequest()).pipe(finalize(() => span?.end(Date.now()))),
+    );
+};
 export const sentryTraceInterceptor = (request: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
-    const updatedRequest = mapRequest(request);
-
-    return next(updatedRequest);
+    return intercept(request, next);
 };

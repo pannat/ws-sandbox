@@ -1,21 +1,16 @@
+import { initializeOtel } from "./otel";
+initializeOtel();
 import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import * as Sentry from "@sentry/node";
 import {continueTrace} from "@sentry/core";
 import websocket, { SocketStream } from '@fastify/websocket';
-import {ProfilingIntegration} from "@sentry/profiling-node";
+import { initializeSentry } from "./sentry";
 
-Sentry.init({
-  dsn: "https://b88e6d0eda9fcb25bf847814fd601920@us.sentry.io/4506699218681856",
-  integrations: [
-    new Sentry.Integrations.Http({ tracing: true }),
-    new ProfilingIntegration(),
-  ],
-  // Performance Monitoring
-  tracesSampleRate: 1.0, //  Capture 100% of the transactions
-  // Set sampling rate for profiling - this is relative to tracesSampleRate
-  profilesSampleRate: 1.0,
-});
+import { trace, SpanStatusCode } from "@opentelemetry/api";
+
+initializeSentry();
+
 
 const json = [
   {
@@ -282,8 +277,19 @@ server.register(async function (fastify) {
       ...traceParent
     });
 
+    const span = trace.getActiveSpan();
+    console.log('span', span);
+    if (span) {
+      const err = new Error("This is a test error");
+      // recordException converts the error into a span event.
+      span.recordException(err);
+      span.setAttribute('my-first-attr', 'my-first-value');
+      // Update the span status to failed.
+      span.setStatus({ code: SpanStatusCode.ERROR, message: String(err) });
+    }
 
-    reply.status(400).send({ message: 'Test Error' }).then(() => transaction.finish(Date.now()))
+    // reply.status(400).send({ message: 'Test Error' }).then(() => transaction.finish(Date.now()))
+    reply.status(200).send({ message: 'Ok' }).then(() => transaction.finish(Date.now()))
   });
 });
 

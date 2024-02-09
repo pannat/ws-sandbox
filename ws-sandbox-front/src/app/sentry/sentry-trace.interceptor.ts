@@ -54,5 +54,6 @@ const intercept = (request: HttpRequest<unknown>, next: HttpHandlerFn): Observab
     );
 };
 export const sentryTraceInterceptor = (request: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
+    console.log(JSON.parse(JSON.stringify(request.headers)));
     return intercept(request, next);
 };
